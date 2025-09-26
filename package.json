@@ -1,13 +1,13 @@
 {
   "name": "rename-files",
   "version": "1.0.0",
-  "main": "dist/main.js",
+  "main": "dist/main/main.js",
   "scripts": {
     "dev": "concurrently \"npm:electron-dev\" \"npm:react-start\"",
     "electron-dev": "wait-on http://localhost:39417 && electron .",
     "react-start": "webpack serve --mode development",
     "build:renderer": "webpack --mode production",
-  "build:main": "tsc src/main.ts src/preload.ts --outDir dist --esModuleInterop --module commonjs --target ES2021",
+    "build:main": "tsc src/main.ts src/preload.ts --outDir dist/main --esModuleInterop --module commonjs --target ES2021",
     "electron": "electron .",
     "lint": "eslint 'src/**/*.{ts,tsx}' --fix",
     "build": "npm run build:renderer && npm run build:main"

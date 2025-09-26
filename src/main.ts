@@ -10,13 +10,13 @@ function createWindow(): void {
 		   width: 800,
 		   height: 600,
 		   webPreferences: {
-			   preload: path.join(__dirname, 'dist', 'preload.js'),
+			   preload: path.resolve(__dirname, 'preload.js'),
 			   nodeIntegration: false,
 			   contextIsolation: true,
 		   },
 	   });
 	   mainWindow.setMenu(null);
-	   mainWindow.loadURL('file://' + path.join(__dirname, 'index.html'));
+	   mainWindow.loadURL('file://' + path.resolve(__dirname, '..', 'index.html'));
 	   mainWindow.webContents.on('did-finish-load', () => {
 		   console.log('[ELECTRON] App iniciada y ventana cargada');
 	   });
