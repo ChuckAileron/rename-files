@@ -1,15 +1,72 @@
 # Renombrar Archivos - Desktop App
 
-Aplicación de escritorio multiplataforma (Electron + React + TypeScript) para renombrar archivos en lote de una carpeta, permitiendo:
-- Buscar y reemplazar substrings en los nombres
-- Agregar prefijo y/o sufijo a los archivos
-- Seleccionar archivos a renombrar
-- Interfaz moderna y simple
+Aplicación de escritorio multiplataforma para renombrar archivos en lote dentro de una carpeta local. Permite buscar y reemplazar texto en los nombres, agregar prefijos/sufijos y seleccionar de forma individual qué archivos renombrar, todo desde una interfaz gráfica simple y moderna, sin necesidad de un backend ni conexión a internet.
+
+## Índice
+- [Descripción del proyecto](#descripción-del-proyecto)
+- [Funcionalidades](#funcionalidades)
+- [Stack tecnológico](#stack-tecnológico)
+- [Arquitectura](#arquitectura)
+- [Requisitos](#requisitos)
+- [Instalación](#instalación)
+- [Uso](#uso)
+- [Scripts disponibles](#scripts-disponibles)
+- [Estructura del proyecto](#estructura-del-proyecto)
+- [Configuración avanzada](#configuración-avanzada)
+- [Notas y advertencias](#notas-y-advertencias)
+- [Licencia](#licencia)
+
+## Descripción del proyecto
+
+Este proyecto es una prueba de concepto (PoC) de una app de escritorio construida con **Electron** que renderiza su interfaz con **React** y **TypeScript**. Su objetivo es facilitar el renombrado masivo de archivos de una carpeta del sistema de archivos local: el usuario selecciona un directorio, la app lista sus archivos y permite aplicar reglas de búsqueda/reemplazo, prefijo y sufijo sobre los nombres seleccionados.
+
+La comunicación entre la interfaz (proceso de renderer) y el sistema de archivos (proceso principal de Electron) se realiza de forma segura mediante `contextBridge` e `ipcMain`/`ipcRenderer`, sin exponer Node.js directamente al renderer (`contextIsolation: true`, `nodeIntegration: false`).
+
+## Funcionalidades
+
+- **Selección de directorio**: abre un diálogo nativo del sistema operativo para elegir la carpeta a procesar.
+- **Listado de archivos**: muestra todos los archivos (no directorios) contenidos en la carpeta seleccionada.
+- **Selección individual**: casillas de verificación para marcar/desmarcar qué archivos serán renombrados.
+- **Buscar y reemplazar**: sustituye una subcadena de texto por otra en los nombres de archivo.
+- **Prefijo y sufijo**: agrega texto al inicio del nombre o antes de la extensión del archivo.
+- **Renombrado en lote**: aplica todos los cambios (búsqueda/reemplazo + prefijo/sufijo) a los archivos seleccionados de una sola vez.
+- **Indicador de carga (spinner)**: feedback visual durante operaciones con latencia (listar/renombrar).
+- **Interfaz moderna y responsiva**: estilos integrados en el componente, sin barra de menú, enfocada solo en la funcionalidad principal.
+
+## Stack tecnológico
+
+| Categoría          | Tecnología                          |
+|---------------------|--------------------------------------|
+| Framework de escritorio | [Electron](https://www.electronjs.org/) v29 |
+| UI / Frontend       | [React](https://react.dev/) v18 + JSX/TSX |
+| Lenguaje            | [TypeScript](https://www.typescriptlang.org/) v5 |
+| Bundler             | [Webpack](https://webpack.js.org/) v5 (`webpack-cli`, `webpack-dev-server`, `html-webpack-plugin`, `ts-loader`) |
+| Linter / Formato    | [ESLint](https://eslint.org/) v8 + `@typescript-eslint` + [Prettier](https://prettier.io/) |
+| Orquestación dev    | [concurrently](https://www.npmjs.com/package/concurrently) + [wait-on](https://www.npmjs.com/package/wait-on) |
+| Comunicación IPC    | `contextBridge`, `ipcMain`, `ipcRenderer` (Electron) |
+| Sistema de archivos | Módulos nativos de Node.js `fs` y `path` |
+
+## Arquitectura
+
+La aplicación se divide en dos procesos, típico de Electron:
+
+- **Proceso principal** ([src/main.ts](src/main.ts)): crea la ventana de `BrowserWindow`, gestiona el diálogo de selección de carpeta, lee el contenido del directorio y ejecuta el renombrado real de archivos en disco (`fs.renameSync`).
+- **Script de preload** ([src/preload.ts](src/preload.ts)): expone de forma controlada las funciones `selectDirectory`, `listFiles` y `renameFiles` al renderer mediante `contextBridge.exposeInMainWorld('electronAPI', ...)`.
+- **Proceso de renderer** ([src/App.tsx](src/App.tsx), [src/index.tsx](src/index.tsx)): interfaz React que consume `window.electronAPI` (a través de [src/fileUtils.ts](src/fileUtils.ts)) para listar y renombrar archivos, manteniendo el estado de la UI (directorio, archivos, selección, filtros).
+- **Tipos compartidos** ([src/types.ts](src/types.ts)): define `RenameArgs`, el contrato de datos entre renderer y proceso principal vía IPC.
+
+```mermaid
+flowchart LR
+    A[React UI - App.tsx] -- window.electronAPI --> B[preload.ts]
+    B -- ipcRenderer.invoke --> C[main.ts]
+    C -- ipcMain.handle --> D[(Sistema de archivos)]
+```
 
 ## Requisitos
+
 - Node.js >= 18
 - npm >= 9
-- (Linux) netcat (`nc`)
+- (Linux) netcat (`nc`), usado por el script de arranque
 
 ## Instalación
 
@@ -18,10 +75,6 @@ Aplicación de escritorio multiplataforma (Electron + React + TypeScript) para r
    ```sh
    npm install
    ```
-
-## Uso
-
-
 
 ## Uso
 
@@ -36,24 +89,59 @@ chmod +x start-linux.sh
 ./start-linux.sh
 ```
 
-Ambos scripts detectan si es necesario compilar el frontend (modo producción) y abren la aplicación de escritorio Electron automáticamente. Si ya existe el build, la app arranca instantáneamente; si no, primero compila y luego abre la app.
+Ambos scripts detectan si es necesario compilar el frontend (modo producción) y abren la aplicación de escritorio Electron automáticamente. Si ya existe el build (`dist/`), la app arranca instantáneamente; si no, primero compila y luego abre la app.
 
-## Características
-- Selecciona una carpeta y lista todos los archivos.
-- Marca/desmarca archivos a renombrar.
-- Busca y reemplaza substrings en los nombres.
-- Agrega prefijo y/o sufijo a los nombres.
-- Renombra todos los archivos seleccionados de una vez.
-- Spinner de carga para operaciones con latencia.
-- Interfaz moderna y responsiva.
+### Modo desarrollo
+
+Para trabajar con recarga en caliente del frontend junto con Electron:
+```sh
+npm run dev
+```
+Esto levanta `webpack-dev-server` en `http://localhost:39417` y, una vez disponible, lanza Electron apuntando a ese servidor.
+
+## Scripts disponibles
+
+| Script                  | Descripción                                                                 |
+|--------------------------|------------------------------------------------------------------------------|
+| `npm run dev`            | Ejecuta en paralelo el servidor de desarrollo de React y Electron.          |
+| `npm run electron-dev`   | Espera a que el dev server esté disponible y abre Electron.                 |
+| `npm run react-start`    | Levanta `webpack serve` en modo desarrollo.                                  |
+| `npm run build:renderer` | Compila el frontend (React) en modo producción con Webpack.                 |
+| `npm run build:main`     | Compila `main.ts` y `preload.ts` a JavaScript (CommonJS) en `dist/main`.     |
+| `npm run build`          | Ejecuta `build:renderer` y `build:main` (build completo de producción).     |
+| `npm run electron`       | Lanza Electron usando el build existente.                                    |
+| `npm run lint`           | Ejecuta ESLint con auto-fix sobre los archivos `.ts`/`.tsx` de `src/`.       |
+
+## Estructura del proyecto
+
+```
+package.json          # Dependencias y scripts npm
+webpack.config.js      # Configuración de Webpack (dev y producción)
+tsconfig.json          # Configuración de TypeScript
+start-windows.bat       # Script de arranque para Windows
+start-linux.sh          # Script de arranque para Linux
+public/
+  index.html            # Plantilla HTML base para el renderer
+src/
+  main.ts               # Proceso principal de Electron (ventana, IPC, fs)
+  preload.ts             # Puente seguro entre main y renderer (contextBridge)
+  App.tsx                # Componente principal de la interfaz React
+  index.tsx              # Punto de entrada del renderer (ReactDOM)
+  fileUtils.ts            # Wrappers tipados sobre window.electronAPI
+  types.ts                # Tipos compartidos (RenameArgs)
+```
 
 ## Configuración avanzada
-- El puerto usado por defecto es `39417`. Puedes cambiarlo editando los scripts y `webpack.config.js`.
 
-## Notas
-- No requiere servidor backend, todo es local.
-- No hay barra de menú, toda la funcionalidad está en la ventana principal.
-- Los cambios de nombre son irreversibles, ¡usa con precaución!
+- El puerto usado por defecto por el dev server es `39417`. Puedes cambiarlo editando `webpack.config.js` y los scripts (`electron-dev`, `start-*.bat/sh`) que dependen de ese valor.
+- La compilación del proceso principal (`build:main`) usa `tsc` directamente con `--module commonjs` y `--target ES2021`, separado de la compilación del renderer (que usa Webpack con `ts-loader`).
+
+## Notas y advertencias
+
+- No requiere servidor backend: toda la lógica corre localmente en el equipo del usuario.
+- No hay barra de menú; toda la funcionalidad está disponible en la ventana principal.
+- **Los cambios de nombre son irreversibles.** Usa la aplicación con precaución, especialmente al aplicar búsqueda/reemplazo sobre carpetas con archivos importantes.
 
 ## Licencia
+
 MIT
