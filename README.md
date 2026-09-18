@@ -1,6 +1,6 @@
 # Renombrar Archivos - Desktop App
 
-Aplicación de escritorio multiplataforma para renombrar archivos en lote dentro de una carpeta local. Permite buscar y reemplazar texto en los nombres, reemplazar prefijos/sufijos (incluidas las variantes "hasta final"), agregar prefijos/sufijos y seleccionar de forma individual qué archivos renombrar, todo desde una interfaz gráfica moderna, sin necesidad de un backend ni conexión a internet.
+Aplicación de escritorio multiplataforma para renombrar archivos en lote dentro de una carpeta local. Permite buscar y reemplazar texto en los nombres, reemplazar prefijos/sufijos (incluidas las variantes de reemplazo "desde el texto hacia atrás/adelante"), agregar prefijos/sufijos y seleccionar de forma individual qué archivos renombrar, todo desde una interfaz gráfica moderna, sin necesidad de un backend ni conexión a internet.
 
 ## Índice
 - [Descripción del proyecto](#descripción-del-proyecto)
@@ -18,7 +18,7 @@ Aplicación de escritorio multiplataforma para renombrar archivos en lote dentro
 
 ## Descripción del proyecto
 
-Este proyecto es una prueba de concepto (PoC) de una app de escritorio construida con **Electron** que renderiza su interfaz con **React** y **TypeScript**. Su objetivo es facilitar el renombrado masivo de archivos de una carpeta del sistema de archivos local: el usuario selecciona un directorio, la app lista sus archivos y permite aplicar reglas de búsqueda/reemplazo, reemplazo de prefijo/sufijo (estándar o truncando hasta el final del nombre) y adición de prefijo/sufijo sobre los nombres seleccionados, siempre sin considerar la extensión del archivo.
+Este proyecto es una prueba de concepto (PoC) de una app de escritorio construida con **Electron** que renderiza su interfaz con **React** y **TypeScript**. Su objetivo es facilitar el renombrado masivo de archivos de una carpeta del sistema de archivos local: el usuario selecciona un directorio, la app lista sus archivos y permite aplicar reglas de búsqueda/reemplazo, reemplazo de prefijo/sufijo, reemplazo desde un texto hacia atrás o hacia adelante, y adición de prefijo/sufijo sobre los nombres seleccionados, siempre sin considerar la extensión del archivo.
 
 La comunicación entre la interfaz (proceso de renderer) y el sistema de archivos (proceso principal de Electron) se realiza de forma segura mediante `contextBridge` e `ipcMain`/`ipcRenderer`, sin exponer Node.js directamente al renderer (`contextIsolation: true`, `nodeIntegration: false`).
 
@@ -30,8 +30,8 @@ La comunicación entre la interfaz (proceso de renderer) y el sistema de archivo
 - **Buscar y reemplazar**: sustituye una subcadena de texto por otra en los nombres de archivo.
 - **Prefijo - Reemplazar por**: reemplaza el texto inicial del nombre (sin extensión) por otro.
 - **Sufijo - Reemplazar por**: reemplaza el texto final del nombre (antes de la extensión) por otro.
-- **Prefijo hasta final - reemplazar por**: trunca el nombre desde la primera aparición del texto buscado hasta el final, conservando lo anterior y agregando el reemplazo.
-- **Sufijo hasta final - Reemplazar por**: igual que el anterior, pero toma la última aparición del texto buscado dentro del nombre.
+- **Desde texto hacia atrás - reemplazar por**: localiza el texto dentro del nombre y reemplaza todo lo que hay antes (desde el inicio hasta el texto), conservando el texto encontrado y lo que sigue. Ejemplo: `foto_del_2024` con `del` → `x` da `xdel_2024`.
+- **Desde texto hacia adelante - reemplazar por**: localiza el texto dentro del nombre y reemplaza desde el propio texto hasta el final del nombre, conservando lo anterior. Ejemplo: `foto_del_2024` con `2024` → `x` da `foto_del_x`.
 - **Prefijo y sufijo (agregar)**: inserta texto al inicio del nombre o justo antes de la extensión.
 - **Sin considerar la extensión**: todas las operaciones se aplican sobre el nombre base y respetan la extensión original del archivo.
 - **Vista previa en vivo**: cada archivo muestra el nombre actual y el resultado con las reglas aplicadas, junto con el total de archivos que se renombrarán.

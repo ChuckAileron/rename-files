@@ -53,7 +53,7 @@ function applyTransforms(base: string, o: TransformOptions): string {
   }
   if (o.prefixEndFind) {
     const idx = name.indexOf(o.prefixEndFind);
-    if (idx >= 0) name = name.slice(0, idx) + o.prefixEndReplace;
+    if (idx >= 0) name = o.prefixEndReplace + name.slice(idx);
   }
   if (o.suffixEndFind) {
     const idx = name.lastIndexOf(o.suffixEndFind);
@@ -748,7 +748,7 @@ const App: React.FC = () => {
                 onReplace={update('suffixReplace')}
               />
               <OptionRow
-                title="Prefijo hasta final"
+                title="Desde texto hacia atrás"
                 tone="violet"
                 findValue={ops.prefixEndFind}
                 replaceValue={ops.prefixEndReplace}
@@ -756,7 +756,7 @@ const App: React.FC = () => {
                 onReplace={update('prefixEndReplace')}
               />
               <OptionRow
-                title="Sufijo hasta final"
+                title="Desde texto hacia adelante"
                 tone="indigo"
                 findValue={ops.suffixEndFind}
                 replaceValue={ops.suffixEndReplace}
