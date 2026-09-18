@@ -14,10 +14,8 @@ module.exports = {
     ecmaVersion: 'latest',
     sourceType: 'module',
   },
-  plugins: ['@typescript-eslint'],
+  plugins: ['@typescript-eslint', 'prettier'],
   rules: {
-    indent: ['error', 2],
-    '@typescript-eslint/indent': ['error', 2],
     'prettier/prettier': [
       'error',
       {

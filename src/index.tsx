@@ -4,6 +4,6 @@ import App from './App';
 
 const container: HTMLElement | null = document.getElementById('root');
 if (container) {
-	const root: Root = createRoot(container);
-	root.render(<App />);
+  const root: Root = createRoot(container);
+  root.render(<App />);
 }
